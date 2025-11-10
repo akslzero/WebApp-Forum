@@ -1,14 +1,19 @@
-import { useState, useEffect } from 'react';
-import { useAuth } from '@/contexts/AuthContext';
-import { useSocket } from '@/contexts/SocketContext';
-import { postsAPI, categoriesAPI } from '@/services/api';
-import Navbar from '@/components/Navbar';
-import CreatePost from '@/components/CreatePost';
-import PostCard from '@/components/PostCard';
-import CommentList from '@/components/CommentList';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Loader2 } from 'lucide-react';
+import { useState, useEffect } from "react";
+import { useAuth } from "@/contexts/AuthContext";
+import { useSocket } from "@/contexts/SocketContext";
+import { postsAPI, categoriesAPI } from "@/services/api";
+import Navbar from "@/components/Navbar";
+import CreatePost from "@/components/CreatePost";
+import PostCard from "@/components/PostCard";
+import CommentList from "@/components/CommentList";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Loader2 } from "lucide-react";
 
 interface Post {
   _id: string;
@@ -43,7 +48,7 @@ const Index = () => {
   const { socket } = useSocket();
   const [posts, setPosts] = useState<Post[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
-  const [selectedCategory, setSelectedCategory] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState("");
   const [selectedPost, setSelectedPost] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -54,26 +59,29 @@ const Index = () => {
 
   useEffect(() => {
     if (socket) {
-      socket.on('newPost', (newPost: Post) => {
+      socket.on("newPost", (newPost: Post) => {
         setPosts((prev) => [newPost, ...prev]);
       });
 
-      socket.on('postLikeUpdate', ({ postId, likesCount }: { postId: string; likesCount: number }) => {
-        setPosts((prev) =>
-          prev.map((post) =>
-            post._id === postId ? { ...post, likesCount } : post
-          )
-        );
-      });
+      socket.on(
+        "postLikeUpdate",
+        ({ postId, likesCount }: { postId: string; likesCount: number }) => {
+          setPosts((prev) =>
+            prev.map((post) =>
+              post._id === postId ? { ...post, likesCount } : post
+            )
+          );
+        }
+      );
 
-      socket.on('postDeleted', (postId: string) => {
+      socket.on("postDeleted", (postId: string) => {
         setPosts((prev) => prev.filter((post) => post._id !== postId));
       });
 
       return () => {
-        socket.off('newPost');
-        socket.off('postLikeUpdate');
-        socket.off('postDeleted');
+        socket.off("newPost");
+        socket.off("postLikeUpdate");
+        socket.off("postDeleted");
       };
     }
   }, [socket]);
@@ -83,7 +91,7 @@ const Index = () => {
       const response = await categoriesAPI.getAll();
       setCategories(response.data);
     } catch (error) {
-      console.error('Failed to load categories:', error);
+      console.error("Failed to load categories:", error);
     }
   };
 
@@ -94,7 +102,7 @@ const Index = () => {
       const response = await postsAPI.getAll(params);
       setPosts(response.data.posts);
     } catch (error) {
-      console.error('Failed to load posts:', error);
+      console.error("Failed to load posts:", error);
     } finally {
       setLoading(false);
     }
@@ -113,7 +121,13 @@ const Index = () => {
       <Navbar />
 
       <div className="container max-w-2xl py-6 space-y-6">
-        {user && <CreatePost categories={categories} onPostCreated={loadPosts} />}
+        {user && (
+          <CreatePost
+            categories={categories}
+            onPostCreated={loadPosts}
+            onCategoryAdded={loadCategories}
+          />
+        )}
 
         <Tabs value={selectedCategory} onValueChange={setSelectedCategory}>
           <TabsList className="w-full justify-start overflow-x-auto">
@@ -143,14 +157,18 @@ const Index = () => {
 
             {posts.length === 0 && (
               <p className="text-center text-muted-foreground py-12">
-                Belum ada post. {user ? 'Buat post pertama!' : 'Login untuk membuat post.'}
+                Belum ada post.{" "}
+                {user ? "Buat post pertama!" : "Login untuk membuat post."}
               </p>
             )}
           </div>
         )}
       </div>
 
-      <Dialog open={selectedPost !== null} onOpenChange={() => setSelectedPost(null)}>
+      <Dialog
+        open={selectedPost !== null}
+        onOpenChange={() => setSelectedPost(null)}
+      >
         <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Komentar</DialogTitle>

@@ -1,11 +1,17 @@
-import { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
-import { Card } from '@/components/ui/card';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Image, Send } from 'lucide-react';
-import { postsAPI } from '@/services/api';
-import { useToast } from '@/hooks/use-toast';
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { Card } from "@/components/ui/card";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Image, Send } from "lucide-react";
+import { postsAPI, categoriesAPI } from "@/services/api";
+import { useToast } from "@/hooks/use-toast";
 
 interface Category {
   _id: string;
@@ -16,12 +22,19 @@ interface Category {
 interface CreatePostProps {
   categories: Category[];
   onPostCreated: () => void;
+  onCategoryAdded?: () => void;
 }
 
-const CreatePost = ({ categories, onPostCreated }: CreatePostProps) => {
-  const [content, setContent] = useState('');
-  const [category, setCategory] = useState('');
+const CreatePost = ({
+  categories,
+  onPostCreated,
+  onCategoryAdded,
+}: CreatePostProps) => {
+  const [content, setContent] = useState("");
+  const [category, setCategory] = useState("");
   const [image, setImage] = useState<File | null>(null);
+  const [newCategory, setNewCategory] = useState("");
+  const [addingCategory, setAddingCategory] = useState(false);
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
 
@@ -38,26 +51,26 @@ const CreatePost = ({ categories, onPostCreated }: CreatePostProps) => {
     setLoading(true);
     try {
       const formData = new FormData();
-      formData.append('content', content);
-      if (category) formData.append('category', category);
-      if (image) formData.append('image', image);
+      formData.append("content", content);
+      if (category) formData.append("category", category);
+      if (image) formData.append("image", image);
 
       await postsAPI.create(formData);
-      
+
       toast({
-        title: 'Post berhasil dibuat!',
-        description: 'Post Anda telah dipublikasikan.',
+        title: "Post berhasil dibuat!",
+        description: "Post Anda telah dipublikasikan.",
       });
-      
-      setContent('');
-      setCategory('');
+
+      setContent("");
+      setCategory("");
       setImage(null);
       onPostCreated();
     } catch (error: any) {
       toast({
-        title: 'Gagal membuat post',
-        description: error.response?.data?.message || 'Terjadi kesalahan',
-        variant: 'destructive',
+        title: "Gagal membuat post",
+        description: error.response?.data?.message || "Terjadi kesalahan",
+        variant: "destructive",
       });
     } finally {
       setLoading(false);
@@ -89,6 +102,49 @@ const CreatePost = ({ categories, onPostCreated }: CreatePostProps) => {
             </SelectContent>
           </Select>
 
+          <div className="flex items-center gap-2">
+            <input
+              className="input input-sm rounded border px-2 py-1 text-sm"
+              placeholder="Tambah kategori baru"
+              value={newCategory}
+              onChange={(e) => setNewCategory(e.target.value)}
+            />
+            <Button
+              type="button"
+              size="sm"
+              onClick={async () => {
+                if (!newCategory.trim()) return;
+                try {
+                  setAddingCategory(true);
+                  const res = await categoriesAPI.create({
+                    name: newCategory.trim(),
+                  });
+                  // select newly created category
+                  setCategory(res.data._id);
+                  setNewCategory("");
+                  toast({
+                    title: "Kategori dibuat",
+                    description: `${res.data.name} telah ditambahkan`,
+                  });
+                  // notify parent to reload categories
+                  if (onCategoryAdded) onCategoryAdded();
+                } catch (err: any) {
+                  toast({
+                    title: "Gagal",
+                    description:
+                      err.response?.data?.message || "Terjadi kesalahan",
+                    variant: "destructive",
+                  });
+                } finally {
+                  setAddingCategory(false);
+                }
+              }}
+              disabled={addingCategory}
+            >
+              {addingCategory ? "Menambah..." : "Tambah"}
+            </Button>
+          </div>
+
           <input
             type="file"
             accept="image/*"
@@ -105,9 +161,7 @@ const CreatePost = ({ categories, onPostCreated }: CreatePostProps) => {
           </label>
 
           {image && (
-            <span className="text-sm text-muted-foreground">
-              {image.name}
-            </span>
+            <span className="text-sm text-muted-foreground">{image.name}</span>
           )}
         </div>
 

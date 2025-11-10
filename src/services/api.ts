@@ -22,7 +22,12 @@ export const authAPI = {
   login: (data: { email: string; password: string }) =>
     api.post('/auth/login', data),
   getMe: () => api.get('/auth/me'),
-};
+    updateEmail: (data: { email: string }) => api.put('/auth/email', data),
+    updatePassword: (data: { currentPassword: string; newPassword: string }) =>
+      api.put('/auth/password', data),
+    deleteAccount: () => api.delete('/auth/delete'),
+    updateUsername: (data: { username: string }) => api.put('/auth/username', data),
+  };
 
 // Posts APIs
 export const postsAPI = {
