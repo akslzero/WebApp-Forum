@@ -1,6 +1,8 @@
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const User = require("../models/User");
+const Post = require("../models/Post");
+const Comment = require("../models/Comment");
 
 // Register
 exports.register = async (req, res) => {
@@ -191,12 +193,31 @@ exports.updatePassword = async (req, res) => {
 // Delete account
 exports.deleteAccount = async (req, res) => {
   try {
-    const user = await User.findByIdAndDelete(req.user.id);
+    const userId = req.user.id;
+
+    // hapus semua post user
+    await Post.deleteMany({ author: userId });
+
+    // hapus semua comment user
+    await Comment.deleteMany({ author: userId });
+
+    // bersihin followers & following (optional tapi bagus)
+    await User.updateMany(
+      {},
+      {
+        $pull: {
+          followers: userId,
+          following: userId,
+        },
+      }
+    );
+
+    // terakhir baru delete user
+    const user = await User.findByIdAndDelete(userId);
+
     if (!user) return res.status(404).json({ message: "User not found" });
 
-    // TODO: Consider deleting or reassigning related posts/comments in the future
-
-    res.json({ message: "Account deleted successfully" });
+    res.json({ message: "Account + posts + comments deleted" });
   } catch (error) {
     res.status(500).json({ message: "Server error", error: error.message });
   }
